@@ -5,12 +5,12 @@ import HomePage from "@/components/SearchInput.vue";
 
 const routes = [
   {
-    path: "/",
+    path: "/vue-file-upload",
     name: "home",
     component: HomePage
   },
   {
-    path: "/organization",
+    path: "/vue-file-upload/organization",
     name: "organization",
     component: Organization,
   },
