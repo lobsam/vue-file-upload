@@ -57,7 +57,7 @@ app.use(
       domain: "dev--zdifqkq.us.auth0.com",
       clientId: "292QPdez4MpeyqL5Vpz7xLGJasaOY6ON",
       authorizationParams: {
-        redirect_uri: "https://lobsam.github.io/organization",
+        redirect_uri: "https://lobsam.github.io/vue-file-upload/organization",
         audience: "https://padma.hasura.app/v1/graphql"
       }
     })
