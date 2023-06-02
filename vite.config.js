@@ -6,6 +6,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/vue-file-upload/',
   plugins: [vue(), vueJsx()],
   resolve: {
     alias: {
