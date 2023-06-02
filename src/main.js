@@ -26,7 +26,7 @@ export function getHeaders() {
 
 function setHttpLink() {
     const httpLink = createHttpLink({
-        uri: import.meta.env.VITE_APP_AUTH0_AUDIENCE,
+        uri: "https://padma.hasura.app/v1/graphql",
         fetch: (uri, options ) => {
           options.headers = getHeaders()
           return fetch(uri, options)
@@ -57,7 +57,7 @@ app.use(
       domain: "dev--zdifqkq.us.auth0.com",
       clientId: "292QPdez4MpeyqL5Vpz7xLGJasaOY6ON",
       authorizationParams: {
-        redirect_uri: "https://lobsam.github.io/organization",
+        redirect_uri: "http://localhost:5173/organization",
         audience: "https://padma.hasura.app/v1/graphql"
       }
     })
