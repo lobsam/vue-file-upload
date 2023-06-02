@@ -54,11 +54,11 @@ const app = createApp({
 })
 app.use(
     createAuth0({
-      domain: import.meta.env.VITE_AUTH0_DOMAIN,
-      clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
+      domain: "dev--zdifqkq.us.auth0.com",
+      clientId: "292QPdez4MpeyqL5Vpz7xLGJasaOY6ON",
       authorizationParams: {
-        redirect_uri: "http://localhost:5173/organization",
-        audience: import.meta.env.VITE_APP_AUTH0_AUDIENCE
+        redirect_uri: "https://lobsam.github.io/organization",
+        audience: "https://padma.hasura.app/v1/graphql"
       }
     })
   );
