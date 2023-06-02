@@ -1,14 +1,17 @@
 <template>
-   <div v-if="!AuthState.loading">
-      <div v-if="!AuthState.isAuthenticated">
-         <button @click="login()" class="btn btn-primary btn-sm">Login</button>
+   <div>
+      <div v-if="!isAuthenticated">
+         <button @click="login()" class="btn btn-primary btn-sm mt-4">Login</button>
       </div>
 
       <div v-else>
-         <p> Welcome <strong>{{ AuthState.user.nickname }}</strong></p>
-         <button @click="logout()" class="btn btn-danger btn-sm">Logout</button>
+         <h6> Welcome <strong>{{ user.nickname }}</strong></h6>
+         <div class="d-flex justify-content-end">
+            <button @click="logoutUser()" class="btn btn-danger btn-sm">Logout</button>
+         </div>
          <h1>Organization</h1>
          <AddOrganization />
+         
          <table class="table" >
            <thead class="table-primary">
              <tr>
@@ -25,7 +28,7 @@
            <tbody>
             <tr 
                v-for="(info, index) in data.orgData" 
-               :class="{ 'table-danger': data.currentUser === info.admin_id}"
+               :class="{ 'table-danger': data.currentUserEmail === info.admin.email}"
                :key="index"
             >
                <th scope="row">{{ info.id }}</th>
@@ -36,7 +39,7 @@
                   <MemberList 
                      :key="index"
                      :members="info.organization_members" 
-                     :org_admin="info.admin_id" 
+                     :org_admin="info.admin" 
                      :org_id="info.id"
                   />
                </td>
@@ -44,7 +47,7 @@
                   <TeamList 
                      :orgMembers="info.organization_members"
                      :org_id="info.id"
-                     :org_admin="info.admin_id"
+                     :org_admin="info"
                   />
                </td>
                <td>
@@ -53,19 +56,21 @@
                      :org_admin="info.admin_id"
                   />
                </td>
-               <td v-if="info.admin_id === data.currentUser">
-                  <button class="btn btn-danger btn-sm me-2" @click="deleteOrg" :disabled="info.same_as_team"> Delete </button>
-                  <UpdateOrganization :orgData="data.orgData[0]"/>
+               <td v-if="user.email === info.admin.email">
+                  <button class="btn btn-danger btn-sm me-2" @click="deleteOrg"> Delete </button>
+                  <UpdateOrganization :orgData="info"/>
                </td>
              </tr>
            </tbody>  
          </table>
+         <button class="btn btn-primary btn-sm" @click="loadData()"> refresh </button>
+         <p>NOTE : After SIGN IN click the "refresh button"</p>
       </div>
    </div>
    
 </template>
 <script>
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, watch } from 'vue';
 import MemberList from "@/components/MemberList.vue"
 import TeamList from "@/components/TeamList.vue"
 import AddOrganization from "@/components/AddOrganization.vue"
@@ -74,7 +79,7 @@ import Dictionaries from './Dictionaries.vue';
 import { useQuery, useMutation } from '@vue/apollo-composable';
 import { getUserOrganization } from '@/components/graphql/quries.js'
 import {DELETE_ORG } from "@/components/graphql/mutation.js"
-import { useAuth0, AuthState } from "../utils/useAuth0";
+import { useAuth0 } from '@auth0/auth0-vue';
 
 export default {
    name: "OrgList",
@@ -86,27 +91,50 @@ export default {
       Dictionaries
    },
    setup() {
+      const { loginWithRedirect, user, isAuthenticated, logout, getAccessTokenSilently } = useAuth0();
       //state
       const data = reactive({
          orgData: [],
-         currentUser: ""
+         currentUserEmail: ""
       });
-      const { login, logout, initAuth } = useAuth0(AuthState);
       onMounted(() => {
-         initAuth();
-         loadData();
+         loadData()
+         setToken();
       })
+      watch(isAuthenticated.value ,(nVal, oVal) => {
+         loadData();
+         setToken();
+      })
+      function login() {
+         loginWithRedirect();
+      }
+      async function setToken() {
+         const token = await getAccessTokenSilently();
+         sessionStorage.setItem("token", token) 
+      }
+      function logoutUser() {
+         logout({ logoutParams: { returnTo:"http://localhost:5173/organization" } });
+      }
       function loadData() {
-         const { result, error, onError, onResult, refetch} = useQuery( getUserOrganization);
-         //success
-         onResult(() => {
-            data.orgData = result.value.organization
-         })
-         //error
-         onError(() => {
-            console.log("Error: ", error)
-         })
-         refetch()
+         setToken();
+         if(isAuthenticated.value) {
+            const { result, error, onError, onResult, refetch} = useQuery(getUserOrganization, {'fetchPolicy': 'no-cache'});
+            //success
+            onResult(async () => {
+               data.orgData = result.value.organization
+               const currentUser = await user
+               if(currentUser.value) {
+                  data.currentUserEmail = currentUser.value.email
+               }
+            })
+            //error
+            onError(() => {
+               alert(error)
+            })
+            refetch()
+         } else {
+            data.orgData = []
+         }
       }
       async function deleteOrg() {
          let id = data.orgData[0].id
@@ -126,13 +154,14 @@ export default {
 
       return {
          data,
-         onMounted,
+         login,
+         user, 
+         isAuthenticated,
          updateOrg,
          deleteOrg,
          login,
-         logout,
-         initAuth,
-         AuthState
+         logoutUser,
+         loadData
       }
    },
 }

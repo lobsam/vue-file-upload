@@ -11,37 +11,49 @@ export const USERS_LIST = gql`
     }
   }
 `
+
+export const GET_USER_BY_EMAIL = gql`
+  query getUserByEmail($email: String!) {
+    user(where: {email: {_eq: $email}}) {
+      id
+      name
+    }
+  }
+`;
 //list of user's organiztion
 export const getUserOrganization = gql`
-    query getOganization {
-      organization {
+  query getOganization {
+    organization {
+      id
+      logo
+      name
+      same_as_team
+      admin {
         id
-        logo
+        email
+      }
+      organization_members {
+        user {
+          id
+          name
+          email
+        }
+      }
+      teams {
+        id
         name
-        same_as_team
+        logo
         admin_id
-        organization_members {
+        team_members {
           user {
             id
             name
             email
           }
         }
-        teams {
-          id
-          name
-          logo
-          admin_id
-          team_members {
-            user {
-              id
-              name
-              email
-            }
-          }
-        }
       }
     }
+  }
   `
   
   //list of user's organization members
@@ -62,6 +74,33 @@ export const GET_ORG_MEMBERS = gql`
 export const GET_USER_TEAM = gql`
   query getUserTeam {
     team {
+      id
+      logo
+      name
+      organization_id
+      admin {
+        id
+        name
+        email
+      }
+      dictionary_permission {
+        id
+        dictionary_id
+        team_id
+      }
+      team_members {
+        user {
+          id
+          name
+          email
+        }
+      }
+    }
+  }
+`
+export const GET_TEAM_BY_ORG_PK= gql`
+  query getTeamByOrgPK($org_id: uuid!) {
+    team(where: {organization_id: {_eq: $org_id}}) {
       id
       logo
       name

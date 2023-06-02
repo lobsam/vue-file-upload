@@ -1,6 +1,6 @@
 <template v-if="">
-    <button class="btn btn-primary btn-sm " data-bs-target="#updateOrgModal" data-bs-toggle="modal"> Edit </button>
-    <div class="modal fade" id="updateOrgModal">
+    <button class="btn btn-primary btn-sm " :data-bs-target="target" data-bs-toggle="modal"> Edit </button>
+    <div class="modal fade" :id="modalID">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -56,12 +56,16 @@ export default {
   },
   data() {
     return {
+        target: "",
+        modalID: "",
         iserror: false,
         errorMessage: "",
         orgObject: {}
     }
   },
   created() {
+    this.target = `#modal-${this.orgData.id}-org-update`
+    this.modalID = `modal-${this.orgData.id}-org-update`
     this.orgObject = {
         id: this.orgData.id,
         name: this.orgData.name,
@@ -88,11 +92,14 @@ export default {
             const { mutate:updateOrganization, onDone , onError, error} = useMutation(UPDATE_ORG);
             updateOrganization(variables)
             onDone(() => {
+                console.log("update")
+                alert("update is Done")
                 this.loadData();
             })
             onError(() => {
                 this.iserror = true;
                 this.errorMessage = error;
+                console.log("error : ", this.errorMessage)
             })
         } catch (error) {
                 this.iserror = true;

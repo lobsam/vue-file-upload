@@ -44,6 +44,7 @@
                 </div>
                 
                 <div class="modal-footer">
+                    <p v-if="loading">Loading.......</p>
                     <button type="submit"  @click.prevent="onAddDictionaryAPI" class="btn btn-success btn-sm ">Upload via API</button>
                     <button type="submit"  @click.prevent="onCreateDictionary" class="btn btn-primary btn-sm ">Create Dictionary</button>
                 </div>
@@ -63,6 +64,7 @@
 </template>
 
 <script>
+import { inject } from "vue";
 import { GET_DICTIONARY_ACCESS_MODE, GET_LANGUAGES } from '@/components/graphql/quries.js'
 import {ADD_DICTIONARY,ADD_DICTIONARY_API } from "@/components/graphql/mutation.js"
 import { useMutation, useQuery } from '@vue/apollo-composable';
@@ -78,8 +80,15 @@ export default {
     components: {
         AddDictionaryFile
     },
+    setup() {
+        const loadDictionaryTable = inject('reloadData')
+        return {
+            loadDictionaryTable
+        }
+    },
     data () {
         return {
+            loading: false,
             dictionary: {},
             currentOffCanvasBtn: "",
             currentOffCanvasTarget: "",
@@ -102,8 +111,8 @@ export default {
     },
     methods: {
         async loadData() {
-            this.currentOffCanvasBtn = `#${this.dictionary.name}-offcanvas`
-            this.currentOffCanvasTarget = `${this.dictionary.name}-offcanvas`
+            this.currentOffCanvasBtn = `#canvas${this.org_id}`
+            this.currentOffCanvasTarget = `canvas${this.org_id}`
             
             //get access_mode options
             const { result, onResult, onError, error } = await useQuery(GET_DICTIONARY_ACCESS_MODE);
@@ -145,10 +154,15 @@ export default {
             this.onSubmit(ADD_DICTIONARY, variables)
         },
         async onSubmit(add_dictionary, variables) {
-            const { mutate: addDictionary, onDone, onError, error } = await useMutation(add_dictionary);
+            const { mutate: addDictionary, onDone, loading, onError, error } = await useMutation(add_dictionary);
             addDictionary( variables )
+            if(loading) {
+                this.loading = loading
+            }
             onDone(() => {
-                console.log(" update Done ");
+                this.loadDictionaryTable()
+                this.loading = false;
+                console.log("update Done");
                 this.$parent.loadData()
             })
             onError(() => {

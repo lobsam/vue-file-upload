@@ -1,6 +1,6 @@
 <template v-if="">
-    <button class="btn btn-primary btn-sm " data-bs-target="#dictionaryModal" data-bs-toggle="modal"> View </button>
-    <div class="modal fade" id="dictionaryModal">
+    <button class="btn btn-primary btn-sm " :data-bs-target="target" data-bs-toggle="modal"> View </button>
+    <div class="modal fade" :id="modalID">
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
@@ -15,6 +15,9 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col p-1">
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-success btn-sm" @click="loadData">Refresh</button>
+                            </div>
                             <table  class="table table-hover dictionary-table shadow-sm" >
                                 <thead class="table-primary">
                                     <tr class="table-primary ">
@@ -106,6 +109,7 @@
                                     {{team.name}}
                                 </option>
                               </select>
+                              <button class="mt-2" @click="getTeamList()">refresh</button>
                             </div>
                             <div class="d-flex justify-content-end pt-3">
                                 <button 
@@ -126,12 +130,13 @@
 <script>
 
 import 'bootstrap';
-import { GET_DICTIONARIES, GET_USER_TEAM, GET_TEAM_BY_PK } from '@/components/graphql/quries.js'
+import { GET_DICTIONARIES, GET_TEAM_BY_ORG_PK, GET_TEAM_BY_PK } from '@/components/graphql/quries.js'
 import {ADD_DICTIONARY_PERMISSION, DELETE_DICTIONARY_PERMISSION, DELETE_DICTIONARY } from "@/components/graphql/mutation.js"
 import { useQuery, useMutation } from '@vue/apollo-composable';
 import UpdateDictionary from './UpdateDictionary.vue';
 import AddDictionary from './AddDictionary.vue';
 import AddWords from './AddWords.vue'
+import { MissingRefreshTokenError } from '@auth0/auth0-spa-js';
 
 
 export default {
@@ -158,6 +163,8 @@ export default {
   },
   data() {
     return {
+        target: "",
+        modalID: "",
         iserror: false,
         errorMessage: "",
         selectedRowIndex: -1,
@@ -177,6 +184,8 @@ export default {
     }
   },
   mounted() {
+    this.modalID = `modal-${this.org_id}-dictionary`
+    this.target = `#modal-${this.org_id}-dictionary`
     this.loadData();
     this.getTeamList();
   },
@@ -192,18 +201,17 @@ export default {
         refetch();
     },
 
-    updateDictionaryTable() {
-        console.log("hello")
-    },
 
     async getTeamList() {
-        const {result, onResult, onError, error} = await useQuery(GET_USER_TEAM);
+        const {result, onResult, onError, refetch, error} = await useQuery(GET_TEAM_BY_ORG_PK, {org_id: this.org_id});
         onResult(() => {
             this.teamNameList = result.value.team
+            
         })
         onError(() => {
             console.log("Error: ", error)
         })
+        refetch();
     },
     
     async addPermission() {

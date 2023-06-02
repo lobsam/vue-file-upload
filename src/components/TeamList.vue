@@ -1,6 +1,6 @@
 <template>
-  <button class="btn btn-primary btn-sm  " data-bs-target="#teamModal" data-bs-toggle="modal"> view </button>
-       <div class="modal fade" id="teamModal">
+  <button class="btn btn-primary btn-sm  " :data-bs-target="target" data-bs-toggle="modal"> view </button>
+       <div class="modal fade" :id="modalID">
            <div class="modal-dialog modal-fullscreen">
                <div class="modal-content">
                    <div class="modal-header">
@@ -58,7 +58,7 @@
                                               @click="loadUpdateMember(team)"
                                             ></i>
                                             <i 
-                                              v-if="currentUser === org_admin"
+                                              v-if="currentUserEmail === org_admin.admin.email"
                                               class="bi bi-trash"
                                               style="font-size: 20px; color:red"
                                               @click="onDeleteTeam(team.id)"
@@ -113,7 +113,7 @@
                                                 :disabled=" teamAdmin === member.user.id"
                                                 class="btn btn-danger btn-sm me-2" 
                                                 @click="ondeleteTeamMember(member.user.id)"
-                                                v-if="org_admin === currentUser || selectedTeam.admin.id === currentUser"
+                                                v-if="org_admin.admin.email === currentUserEmail || selectedTeam.admin.email === currentUserEmail"
                                             >
                                                 Remove
                                             </button>
@@ -226,9 +226,9 @@
 </template>
 
 <script>
-import { headers } from "@/headerSession/headers"
+import { useAuth0 } from '@auth0/auth0-vue';
 import { useMutation, useQuery } from '@vue/apollo-composable'
-import { GET_USER_TEAM,GET_TEAM_MEMBER_BY_TEAM_PK } from '@/components/graphql/quries.js'
+import { GET_TEAM_BY_ORG_PK,GET_TEAM_MEMBER_BY_TEAM_PK } from '@/components/graphql/quries.js'
 import { ADD_TEAM, UPDATE_TEAM, ADD_TEAM_MEMBERS, DELETE_TEAM_MEMBERS, DELETE_TEAM } from "@/components/graphql/mutation.js"
 export default {
    name: "organization_member",
@@ -238,7 +238,7 @@ export default {
             required: true
         },
        org_admin: {
-           type: String,
+           type: Object,
            required: true
        },
        org_id: {
@@ -248,7 +248,9 @@ export default {
    },
    data() {
        return {
-          currentUser: headers['x-hasura-user-id'],
+          modalID: "",
+          target: "",
+          currentUserEmail: "",
            inputID: "",
            teams: [],
            teamAdmin: "",
@@ -270,12 +272,17 @@ export default {
            }
        }
    },
-   mounted() {
-       this.loadData();
+   async mounted() {
+      this.modalID = `modal-${this.org_id}-team`
+      this.target = `#modal-${this.org_id}-team`
+      const { user }= useAuth0()
+      const currentUser = await user;
+      this.currentUserEmail = currentUser.value.email;
+      this.loadData();
    },
    methods: {
        async loadData() {
-           const { result, error, onResult, onError, refetch } = await useQuery(GET_USER_TEAM);
+           const { result, error, onResult, onError, refetch } = await useQuery(GET_TEAM_BY_ORG_PK, {org_id: this.org_id});
            onResult(() => {
                this.teams = result.value.team
            })
@@ -306,6 +313,7 @@ export default {
         delete this.object.organization_id;
        },
        async onSubmit() {
+        console.log("object : ", this.object)
           try {
             const { mutate:addMemberMutation, onDone, error, onError } = await useMutation(ADD_TEAM)
             addMemberMutation({team: this.object});
@@ -320,8 +328,7 @@ export default {
           }
        },
        async onUpdate() {
-        
-        try {
+        try {  
           const { mutate:addMemberMutation, onDone, error, onError } = await useMutation(UPDATE_TEAM)
           addMemberMutation({
             team_id: this.selectedTeam.id,
@@ -329,7 +336,6 @@ export default {
           });
           onDone(() => {
               this.loadData()
-              console.log("update object : ", this.object)
           })
           onError(() => {
               alert(`${error.value}`)
@@ -350,6 +356,7 @@ export default {
           const { mutate:addMemberMutation, onDone, error, onError } = await useMutation(ADD_TEAM_MEMBERS)
           addMemberMutation({team_member: this.memberData});
           onDone(() => {
+              alert("Added Team members (refresh team Member table)")
               this.loadData()
           })
           onError(() => {

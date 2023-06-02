@@ -29,8 +29,8 @@
                                                 <input 
                                                     class="form-check-input" 
                                                     type="checkbox" 
-                                                    v-if="org_admin === member.user.id"
-                                                    :checked="org_admin === member.user.id" 
+                                                    v-if="currentUserEmail === member.user.email"
+                                                    :checked="currentUserEmail === member.user.email" 
                                                     id="flexCheckDefault"
                                                     disabled
                                                 />
@@ -41,8 +41,8 @@
                                               <button 
                                                   class="btn btn-danger btn-sm me-2" 
                                                   @click="deleteMember(member.user.id)"
-                                                  :disabled="org_admin === member.user.id"
-                                                  v-if="currentUser === org_admin"
+                                                  :disabled="currentUserEmail === member.user.email"
+                                                  v-if="currentUserEmail === org_admin.email"
                                               >
                                                   Remove
                                               </button>
@@ -98,7 +98,7 @@
 import { useMutation, useQuery } from '@vue/apollo-composable'
 import { GET_ORG_MEMBERS } from '@/components/graphql/quries.js'
 import { ADD_ORG_MEMBER, DELETE_ORG_MEMBER } from "@/components/graphql/mutation.js"
-import { headers } from "@/headerSession/headers"
+import { useAuth0 } from '@auth0/auth0-vue';
 export default {
     name: "organization_member",
     props: {
@@ -117,7 +117,7 @@ export default {
     },
     data() {
         return {
-            currentUser: "",
+            currentUserEmail: "",
             modalID: "",
             target: "",
             inputID: "",
@@ -134,8 +134,10 @@ export default {
             }
         }
     },
-    mounted() {
-        this.currentUser = headers['x-hasura-user-id'];
+    async mounted() {
+        const { user } = useAuth0()
+        const currentUser = await user;
+        this.currentUserEmail = currentUser.value.email
         this.modalID = `modal-${this.org_id}`
         this.target = `#modal-${this.org_id}`
         this.loadData();
@@ -169,7 +171,6 @@ export default {
         },
 
         async deleteMember(id) {
-            console.log()
             const {mutate: deleteUser, onDone, onError, error} = useMutation(DELETE_ORG_MEMBER);
             deleteUser({user_id: id,org_id: this.org_id})
             

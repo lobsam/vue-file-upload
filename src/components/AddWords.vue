@@ -130,9 +130,10 @@
 </template>
 <script>
 import { headers } from "@/headerSession/headers"
-import { EXACT_SEARCH } from '@/components/graphql/quries.js'
+import { EXACT_SEARCH, GET_USER_BY_EMAIL } from '@/components/graphql/quries.js'
 import { ADD_WORDS, DELETE_WORD, UPDATE_WORD, UPDATE_DESCRIPTIONS_BY_WORD_ID } from "@/components/graphql/mutation.js"
 import { useMutation, useQuery  } from '@vue/apollo-composable'
+import { useAuth0 } from '@auth0/auth0-vue';
 export default {
     name: 'addWords',
     props: {
@@ -142,7 +143,7 @@ export default {
     },
     data() {
         return {
-            currentUser: headers['x-hasura-user-id'],
+            currentUserID: "",
             languages: [],
             isDisable: true,
             wordID: "",
@@ -163,26 +164,37 @@ export default {
             }
         }
     },
+    async mounted() {
+        const { user } = useAuth0();
+        const currentUser = await user;
+        const currentUserEmail = currentUser.value.email
+        const { result, onResult, onError, error, refetch } = await useQuery(GET_USER_BY_EMAIL, { email : currentUserEmail});
+            
+            onResult(() => {
+                this.currentUserID = result.value.user[0].id
+            })
+            onError(() => {
+                alert(`${error.value}`)
+                this.isError = true;
+                this.errorMessage = error.value
+            })
+
+    },
     watch: {
         dictionary() {
             this.addWordObject.language = this.dictionary.source
             this.addWordObject.descriptions.data.language = this.dictionary.target
             this.addWordObject.descriptions.data.dictionary_id = this.dictionary.id
-            this.addWordObject.descriptions.data.last_updated_by = headers['x-hasura-user-id']
+            this.addWordObject.descriptions.data.last_updated_by = this.currentUserID
             this.isDisable = false
         }
     },
-    mounted() {
-        console.log("dictionary : ", this.dictionary.id)
-    },
-
     methods: {
         async onSearchWord() {
             const { result, onResult, onError, error, refetch } = await useQuery(EXACT_SEARCH, { word : this.searchWord});
             
             onResult(() => {
                 this.searchResult = result.value.data_words
-                console.log(" result", result.value.data_words);
             })
             onError(() => {
                 alert(`${error.value}`)
@@ -192,6 +204,7 @@ export default {
             refetch()
         },
         async onAddWord() {
+            console.log("ord : ", this.addWordObject)
             const { mutate: addword, onDone, onError, error } = await useMutation(ADD_WORDS);
             addword( 
                 {
