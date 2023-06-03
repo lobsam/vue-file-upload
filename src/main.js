@@ -26,7 +26,7 @@ export function getHeaders() {
 
 function setHttpLink() {
     const httpLink = createHttpLink({
-        uri: "https://padma.hasura.app/v1/graphql",
+        uri: import.meta.env.VITE_APP_AUTH0_AUDIENCE,
         fetch: (uri, options ) => {
           options.headers = getHeaders()
           return fetch(uri, options)
@@ -54,11 +54,11 @@ const app = createApp({
 })
 app.use(
     createAuth0({
-      domain: "dev--zdifqkq.us.auth0.com",
-      clientId: "292QPdez4MpeyqL5Vpz7xLGJasaOY6ON",
+      domain: import.meta.env.VITE_AUTH0_DOMAIN,
+      clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
       authorizationParams: {
         redirect_uri: `${window.location.origin}/organization`,
-        audience: "https://padma.hasura.app/v1/graphql"
+        audience: import.meta.env.VITE_APP_AUTH0_AUDIENCE
       }
     })
   );
